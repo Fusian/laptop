@@ -1,0 +1,9 @@
+I see the tree, the house, the car, the boat.
+The tree is 10m north of the house.
+the tree is 0m east of the house.
+The house is 10m north of the car.
+the house is 0m west of the car.
+The boat is 1m north of the car.
+the boat is 0m east of the car.
+The boat is 1m south of the tree.
+the boat is 0m east of the tree.

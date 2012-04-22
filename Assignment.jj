@@ -1,0 +1,735 @@
+/*adder.jj adding up number*/
+options{
+	STATIC = true;
+	IGNORE_CASE = true;
+}
+
+PARSER_BEGIN (Assignment)
+	import java.io.PrintStream;
+	import java.util.*;
+	public class Assignment {
+		public static void main (String[] args)
+		throws ParseException, TokenMgrError {
+			Assignment parser = new Assignment(System.in);//creates the parser object
+			try {
+			parser.S();//begins the parser on the text entered in
+			System.out.println ("ExampleParser: The input was read sucessfully.");
+			}
+			catch(ParseException e){//catches any parse exceptions thrown during the parsers run.
+					String msg = e.getMessage();
+					int index = msg.indexOf ("[PARSING ERROR]") + 1+ msg.indexOf ("[SEMANTIC ERROR]");//checks if the message is one already defined by me, or one with a more generic cause
+					if (index == -1) {
+						System.out.println ("[PARSING ERROR] Misplaced Keyword or Location declaration");//Any errors not already defined will be of this case. Due to definition of location token.
+					}
+					else {
+						System.out.println (e.getMessage());//prints defined message
+					}
+			}
+			catch(TokenMgrError e){//catches special characters not recognised. 
+				System.out.println ("[LEXING ERROR] Unknown input");
+			}
+		}
+	}
+	class DirectedTokens implements Comparable<DirectedTokens> {//this class is used to store all locations and the locations that have been defined as being in a certain direction, and certain distance, from them.
+		private Token locale;//holds the location token itself
+		private String localeText;//holds the location as a string
+		private ArrayList <Token> NorthTo;//holds all tokens north of this one
+		private ArrayList <Token> SouthTo;//all tokens south
+		private ArrayList <Token> EastTo;//all tokens east
+		private ArrayList <Token> WestTo;//all tokens west
+		private ArrayList <DistanceTokens> Distances;//holds all locations that have been given a distance in relation to the directedtoken.
+		
+		public DirectedTokens (Token t) {//sets the locale and localetext based on variable passed in, and creates the needed arraylists. 
+			locale = t;
+			localeText = t.image.toLowerCase();
+			NorthTo = new ArrayList <Token>();
+			SouthTo = new ArrayList <Token>();
+			EastTo = new ArrayList <Token>();
+			WestTo = new ArrayList <Token>();
+			Distances = new ArrayList <DistanceTokens>();
+		}
+		
+		public Token getLoc () {return locale;}//returns the token form of the location
+		public ArrayList <DistanceTokens> getDistanceList() {return Distances;}//returns the entire distance list, needed to sort the distances
+		public void addNorth (Token t) {NorthTo.add(t);} 
+		public void addSouth (Token t) {SouthTo.add(t);} 
+		public void addEast (Token t) {EastTo.add(t);} 
+		public void addWest (Token t) {WestTo.add(t);}//these four methods add a new location onto their respective lists
+		public void addDistance (DistanceTokens d) {Distances.add (d);}//adds a distance token
+		public int getSizeNorth () {return NorthTo.size();}
+		public int getSizeSouth () {return SouthTo.size();}
+		public int getSizeEast () {return EastTo.size();}
+		public int getSizeWest () {return WestTo.size();}//return size of respective list
+		public int getDistanceSize () {return Distances.size();}//returns the size of distance
+		public Token getNorth (int i) {return NorthTo.get(i);}
+		public Token getSouth (int i) {return SouthTo.get(i);}
+		public Token getEast (int i) {return EastTo.get(i);}
+		public Token getWest (int i) {return WestTo.get(i);}//returns item from specified position 
+		public DistanceTokens getDistance (int i) {return Distances.get(i);}//gets distance token from specified position
+		public String toString () {return localeText;}//gives a string version of the location name
+		public int compareTo (DirectedTokens t) {return localeText.compareTo (t.toString());}//used to sort directed tokens.
+	}
+	class DistanceTokens implements Comparable<DistanceTokens>  {//used to hold a location that has a specified distance from another location
+		private Token endLoc;//holds the location in the second half of the statement
+		private String location;//holds the location as a string
+		private int NSdistance;//holds the N/S distance
+		private int EWdistance;//holds the E/W distance
+		
+		public DistanceTokens (Token e, int dis, Token d) {//initilises variables 
+			endLoc = e;//sets the location
+			//following if statement uses the direction token passed through to see which of the directions needs to be updated, and which to set to the 'null' value
+			if (d.image.toLowerCase().equals ("north of")| d.image.toLowerCase().equals ("south of")) {
+				NSdistance = dis;
+				EWdistance = -1;
+			}
+			else {
+				EWdistance = dis;
+				NSdistance = -1;
+			}
+			location = endLoc.image.toLowerCase();//text is set, used in compareTo method
+		}
+		
+		public int getNSDistance () {return NSdistance;}//returns current NS distance
+		public void setNSDistance (int d) {NSdistance = d;}//allows it to be set
+		public int getEWDistance () {return EWdistance;}//returns EW distance
+		public void setEWDistance (int d) {EWdistance = d;}//allows it to be set
+		public Token getDestination () {return endLoc;}//returns the destination 
+		public int compareTo (DistanceTokens t) {return location.compareTo (t.getDestination().image.toLowerCase());}//used in sort statement
+	}
+	
+	class BonusToken {
+		private String loc;//holds location name
+		private ArrayList <Path> destinations; //holds distances 
+		
+		public BonusToken (Token t) {
+			loc = t.image.toLowerCase();
+			destinations = new ArrayList <Path> ();
+		}
+		
+		public String getLoc() {return loc;}
+		public void addPath (Path t) {destinations.add(t);}
+		public Path getPath (int i) {return destinations.get(i);}
+		public int getNumOfPaths () {return destinations.size();}
+		public ArrayList<Path> getPathList() {return destinations;}
+	}
+	
+	class Path implements Comparable<Path> {
+		BonusToken endLoc;
+		int distance;
+		
+		public Path (BonusToken t, int d ) {
+			endLoc = t;
+			distance = d;
+		}
+		
+		public BonusToken getDestination () {return endLoc;}
+		public void setDistance (int i) {distance = i;}
+		public int getDistance () {return distance;}
+		public int compareTo (Path t) {
+			if (distance > t.getDistance()) {
+				return 1;
+			} 
+			else if (t.getDistance() > distance) {
+				return -1;
+			} 
+			else {
+				return 0;
+			}
+		}
+	}
+PARSER_END (Assignment)
+
+SKIP: {" "}
+SKIP: {"\n"|"\r"|"\r\n"}//defines the skip characters, any white space, new lines or returns
+TOKEN: {<SEE:"i see">}//the see token - used in location declaration 
+TOKEN: {<THE:"the">}//used to signal a location
+TOKEN: {<AND:"and">}//used to join multiple locations
+TOKEN: {<IS:"is">}//used to refer to a singular location in reference to other locations
+TOKEN: {<ARE:"are">}//used to refer to multiple locations
+TOKEN: {<NORTH:"north of">}
+TOKEN: {<SOUTH:"south of">}
+TOKEN: {<EAST:"east of">}
+TOKEN: {<WEST:"west of">}//directional tokens
+TOKEN: {<END:"."|";">}//signifies the end of a statement
+TOKEN: {<SEP:",">}//seperates multiple locations
+TOKEN: {<MEAS: ("km"|"m"|"miles")>}//shows units used in measurement
+TOKEN: {<DIS: (["0"-"9"])+>}//holds a measurement
+TOKEN: {<LOC:(["a"-"z"])+>}//used to represent locations
+
+void S(): {//start symbol for parser, begins here when expanding
+	ArrayList <DirectedTokens> locations = new ArrayList <DirectedTokens>();//this will hold all locations and directional references
+} 
+{
+	(L(locations)| D(locations))* //language consists of Location declarations (L()), and Direction declarations (D()) in any order and in any amount
+	{
+		int i = 0;
+		Collections.sort (locations);//locations are sorted
+		//for loop then sorts every locations distance lists, so they are in order for the distance map
+		for (i = 0; i< locations.size(); i++) {
+			//System.out.println (locations.get(i).toString());
+			if (locations.get(i).getDistanceSize() > 0) {
+				Collections.sort (locations.get(i).getDistanceList());
+			}
+		}
+	}
+	printDistanceMap (locations)//will create the distance map of input
+	<EOF>//signifies end of file, parser then stops
+}
+
+void L(ArrayList <DirectedTokens> locations): {}//statement for declaring locations
+{
+	<SEE>
+	<THE>//singular tokens must always be in this order
+	DL(locations, true)//first location token is processed, boolean passed to show its a new location to be added
+	(M(locations, true))*//then any following location tokens get processed here
+	<END>//end of statement
+}
+
+Token DL(ArrayList <DirectedTokens> locations, boolean check) : {//Declaring Locations statement, constructs the actual location name from several <LOC> tokens
+	String s = " "; //holds full name of location
+	String c; //holds current word of location
+	Token t;//holds current loc token
+	String n;//used to help check if location already exists
+	int i = 0;
+} 
+{//can either have [<LOC>+] or just <LOC>+, each <LOC> token is a singular word in a possible multi word location
+"["(
+		t = <LOC> //first <LOC> token consumed
+		{ 
+			c = t.image;//current word set
+			if (s == " ") {//checks if this is first word
+				s = c;//sets string to curret word
+			}
+			else {//means this is not the first word
+				s = s + " " + c;//adds current word onto end of location name
+			}
+		}
+    )+"]"//loops as many times as needed, and must end in a square bracket
+	|//or symbol to show other option
+	(//following acts as above, just not inside square brackets.
+		t = <LOC>
+		{ 
+			c = t.image;
+			if (s == " ") {
+				s = c + " ";
+			}
+			else {
+				s = s + c + " ";
+			}
+		}
+	)+
+	{	
+		s = s.toLowerCase();//string is set to a standard format, as we ignore case.
+		t.image = s;//the tokens image is set to the now full location name
+		{
+			if (check == true) {//means this is a new location and must be added to locations.
+				for (i = 0; i<locations.size(); i++) {//loop checks if location name already exists
+					n = locations.get(i).toString();
+					if (t.image.equals (n)) {//throws exception if this is the case
+						throw new ParseException("[PARSING ERROR] Location already declared");
+					}		
+				}
+				locations.add (new DirectedTokens (t));//if not exception has been thrown, a new directed token is added to locations
+			}
+		}
+		return t;//token t is returned.
+	}
+}
+
+void D(ArrayList <DirectedTokens> locations): {//Declares a directional relation between two or more locations
+	Token t = null;//holds the token returned from location delcaration in the first half of the sentence
+	Token u = null;//holds locations from the second half of the sentence
+	Token d = null;//holds the directional token
+	Token distance = null;//holds the optional distance token
+	Token measure = null;//holds optional measure token
+	int i = 0;
+	int j = 0;
+	int count = 0;//counts for multiple objects for correct used of is and are tokens
+	boolean takeDis = false;//checks if a distance has been stated
+	//ArrayList <Token> refd = new ArrayList <Token>();//
+	ArrayList <Token> firstLoc = new ArrayList <Token> ();//keeps all the locations referenced in the first half of the statement
+} 
+{
+	<THE>//shows location is next
+	t = DL(locations, false)//gets first location stated
+	{//refd.add (t);
+	 firstLoc.add (t);//keeps tracks of all locations being directed
+	 count++;}//increases count for multiple locations
+	//Following section can be repeated as needed
+	(t = M(locations, false)//gets next location
+	{//refd.add (t);
+	 firstLoc.add (t);//adds next location to list
+	 count ++;})*//count increases. 
+	//next segement makes sure correct token from 'is' and 'are' is used
+	(<IS>
+		{
+			if (count > 1) {//checks if too many locations referenced for is
+				throw new ParseException ("[PARSING ERROR] Incorrect use of 'IS', multiple objects require 'ARE'");
+			}
+		}
+	|
+	<ARE>
+		{
+			if (count < 2) {//checks if not enough locations referenced for are
+				throw new ParseException ("[PARSING ERROR] Incorrect use of 'ARE', singular objects require 'IS'");
+			}
+		}
+	)
+	//Next bracket set can be repeated 0 or 1 times. 
+	(distance = <DIS>//stores distance
+	 measure = <MEAS>//stores unit measure
+	 {takeDis = true;})?//makes sure distances are converted and stored
+	(d=<NORTH>|d=<SOUTH>|d=<EAST>|d=<WEST>)//gets directional token
+	<THE>
+	u = DL(locations, false)//stores first location referenced in second half
+	validMap(locations, firstLoc, d, u)//checks all locations before direction token make spatial sense
+	{if (takeDis == true) {distanceMeasure (locations, distance, measure, firstLoc, d, u);}}//store distances if any specified
+	//{refd.add (u);}
+	//next segment checks for any more locations that need to parsed
+	(u = M(locations, false)//gets next location
+	validMap(locations, firstLoc, d, u)//makes sure map still valid
+	{if (takeDis == true) {distanceMeasure (locations, distance, measure, firstLoc, d, u);}}//stores distances for next location
+	//{refd.add (u);}
+	)*//section can repeate
+	<END>//end of sentence
+	//{
+		/*for (i=0; i<refd.size(); i++) {
+			v = refd.get (i);
+			for (j = i +1; j <refd.size(); j++) {
+				n = refd.get(j);
+				if (v.image.equals (n.image)) {
+					throw new ParseException("[PARSING ERROR] Location already declared");
+				}	
+			}
+		}*/
+	//}
+}
+Token M(ArrayList<DirectedTokens> locations, boolean check): {//used to parse lists of multiple locations
+	Token t;//stores location
+} 
+{
+	//segement says you can have either <SEP><THE>(DL) or <AND><THE>(DL)
+	(<SEP>
+	<THE>
+	t = DL(locations, check)//stores location
+	|
+	<AND>
+	<THE>
+	t = DL(locations, check))//stores location
+	{return t;}//returns location if needed
+}
+//method checks if map is spatial valid
+void validMap (ArrayList<DirectedTokens> locations, ArrayList<Token> firstLoc, Token d, Token target): {
+	int i;
+	int j = 0;
+	boolean search = true;//used to stop search/say if search sucessful 
+	DirectedTokens t = null;//holds first location in direction
+	DirectedTokens u = null;//holds end location of direction
+}
+{
+	{
+		//loop finds end location of direction from locations list
+		for (i=0; i<locations.size();i++) {
+			if (target.image.equals(locations.get(i).toString())) {
+				u = locations.get(i);
+				search = false;
+			}
+		}
+		if (search == true) {//checks if location found
+			throw new ParseException("[PARSING ERROR] Undelcared Location being referenced");
+		}
+		else {
+			search  = true;//resets search
+		}
+		//loop works through each start location for each direction
+		for (i=0;i<firstLoc.size(); i++) {
+			//finds start location in locations list
+			while (search == true && j < locations.size()) {
+				if (firstLoc.get(i).image.equals(locations.get(j).toString())) {
+					search = false;//location found stops search
+					t = locations.get(j);
+				}
+				j++;
+			}
+			if (search == true) {//location not found
+				throw new ParseException("[PARSING ERROR] Undelcared Location being referenced");
+			}
+			else {
+				search = true;//reset search
+				j = 0;//resets j
+				if (t.toString().equals(u.toString())) {//sees if locations being referenced are the same
+					throw new ParseException("[PARSING ERROR] Location already declared");
+				}
+				else{
+				String dir = (d.image).toLowerCase();//converts direction to lower case
+				//if statements for each direction add target token to first location, and first location to opposite direction for end location
+				if (dir.equals ("north of")) {
+						t.addNorth(target);
+						u.addSouth(t.getLoc());
+					}
+					else if (dir.equals ("south of")) {
+						t.addSouth(target);
+						u.addNorth(t.getLoc());
+					}
+					else if (dir.equals ("east of")) {
+						t.addEast(target);
+						u.addWest(t.getLoc());
+					}
+					else if (dir.equals ("west of")) {
+						t.addWest(target);
+						u.addEast(t.getLoc());
+					}
+					validPlacement(locations, dir, t.getLoc(), u);//now checks relations of location in reference to eachother
+				}
+			}
+		}
+	}
+}
+void validPlacement (ArrayList<DirectedTokens> locations,String dir, Token v, DirectedTokens u): {//checks all relations in reference to each other
+	int i;
+	DirectedTokens t = null;
+}
+{
+	{
+		for (i=0; i<locations.size();i++) {//finds start location in locations and stores it
+			if (v.image.equals(locations.get(i).toString())) {
+				t = locations.get(i);
+			}
+		}
+		
+		if (dir.equals ("north of")) {//checks if direction was north
+			for (i = 0; i < t.getSizeSouth(); i++) {//loops through all locations in opposite direction
+				if (t.getSouth(i).image.equals(u.toString())) {//makes sure location specified to be north in statement has not been declared to be south already
+					throw new ParseException("[SEMANTIC ERROR] Invalid map layout. Spacial Paradox.");
+				}
+				else {//now makes sure end location not south in any location south of start location
+					validPlacement (locations,dir, t.getSouth(i), u);
+				}
+			}
+		}
+		//as above for south
+		else if (dir.equals ("south of")) {
+			for (i = 0; i < t.getSizeNorth(); i++) {
+				if (t.getNorth(i).image.equals(u.toString())) {
+					throw new ParseException("[SEMANTIC ERROR] Invalid map layout. Spacial Paradox.");
+				}
+				else {
+					validPlacement (locations, dir, t.getNorth(i), u);
+				}
+			}
+		}
+		//as above for east
+		else if (dir.equals ("east of")) {
+			for (i = 0; i < t.getSizeWest(); i++) {
+				if (t.getWest(i).image.equals(u.toString())) {
+					throw new ParseException("[SEMANTIC ERROR] Invalid map layout. Spacial Paradox.");
+				}
+				else {
+					validPlacement (locations, dir, t.getWest(i), u);
+				}
+			}
+		}
+		//as above for west
+		else if (dir.equals ("west of")) {
+			for (i = 0; i < t.getSizeEast(); i++) {
+				if (t.getEast(i).image.equals(u.toString())) {
+					throw new ParseException("[SEMANTIC ERROR] Invalid map layout. Spacial Paradox.");
+				}
+				else {
+					validPlacement (locations, dir, t.getEast(i), u);
+				}
+			}
+		}
+	}
+}
+//stores distances
+void distanceMeasure (ArrayList<DirectedTokens> locations, Token dis, Token meas, ArrayList<Token> firstLoc, Token dir, Token target): {
+	int distance = Integer.parseInt (dis.image);//converts distance token from string to int
+	String measure = meas.image.toLowerCase();//gets measure as a string
+	String ELdir = dir.image.toLowerCase();//
+	DirectedTokens u = null;//gets end location of distance
+	DirectedTokens t = null;//holds start point of distance
+	String lowLoc;//holds lower case version of start location string
+	int i = 0;
+	int j = 0;
+	boolean search = true;//used to stop search
+}
+{
+	{
+		//two ifs statements just convert measures to stand form of meters
+		if (measure.equals("km")) {
+			distance = distance * 1000;
+		}
+		else if (measure.equals ("miles")) {
+			distance = distance * 1609;
+		}
+		//loop finds end location in locations list
+		for (i=0; i<locations.size();i++) {
+			if (target.image.equals(locations.get(i).toString())) {
+				u = locations.get(i);
+			}
+		}
+		
+		//loop goes through every start location
+		for (i=0;i<firstLoc.size(); i++) {
+			j = 0;
+			search = true;
+			while (search == true && j < locations.size()) {//looks for start location in the location list
+				lowLoc = firstLoc.get(i).image.toLowerCase();
+				if (lowLoc.equals(locations.get(j).toString())) {
+					search = false;
+					t = locations.get(j);
+				}
+				j++;
+			}
+			
+			addDistances (t, u, dir, distance);
+			addDistances (u, t, dir, distance);
+			
+		}
+	}
+}
+void addDistances (DirectedTokens t, DirectedTokens u, Token dir, int distance): {
+	DistanceTokens current = null;//holds distance token to check against current distance
+	DistanceTokens d = null;//holds new distance token for start location
+	String DTdir;//holds direction of distance
+	String dest;//holds end location lower case string
+	int j = 0;
+	boolean search = true;//used to stop search
+}
+{
+	{
+		while ( j < t.getDistanceSize() && search == true) {//goes through distance list, in order to check if distance token already exists
+			current = t.getDistance(j);//gets next distance token in list
+			dest = current.getDestination().image.toLowerCase();//gets string version of destination
+			if (dest.equals (u.toString())) {//sees if current distance relation has been specified already
+				DTdir = dir.image.toLowerCase();//gets direction of distance
+				if (DTdir.equals("north of") ||  DTdir.equals ("south of")) {//distance goes N/S
+					if (current.getNSDistance() != -1) {//means this distance has already been set once, error
+						throw new ParseException("[SEMANTIC ERROR] Distance between two objects cannot be specified more then once");
+					}
+					else {
+						current.setNSDistance (distance);//sets distance
+					}
+				}
+				else {//distance goes E/W
+					if (current.getEWDistance() != -1) {//already been set, error.
+						throw new ParseException("[SEMANTIC ERROR] Distance between two objects cannot be specified more then once");
+					}
+					else {
+						current.setEWDistance (distance);//sets distance
+					}
+				}
+				search = false;//location found, stop search
+			}
+			j++;
+		}
+			
+		if (search == true) {//means location was never found, distance relation new.
+			d = new DistanceTokens (u.getLoc(), distance, dir);//create distance token
+			t.addDistance (d);//add new distance to start location
+		}
+	}
+}
+void printDistanceMap (ArrayList<DirectedTokens> locations): {//sorts & prints map
+	String dist [][] = new String [locations.size()] [locations.size()];//array to hold distances
+	String dest;//stores destination of distance relation
+	DistanceTokens current = null;//holds current distance
+	int distance = 0;//holds the distance
+	int i = 0;
+	int j = 0;
+	int m = 0;
+	String line;//holds the next line to print
+}
+{
+	{
+		for (i = 0; i<locations.size(); i++) {//fills initial values of array
+			for (j = 0; j<locations.size();j++) {
+				dist [i][j] = "unknown";
+			}
+		}
+		//loops through each location to fill in distance array
+		for (i = 0; i<locations.size(); i++) {
+			dist [i][i] = "0";//location is always 0 meters from itself
+			if (locations.get(i).getDistanceSize() > 0) {//sees if location has any distance relations
+				m = 0;//used to iterate through locations
+				j = 0;
+				while (j<locations.get(i).getDistanceSize()) {//now goes through all distance tokens in current location
+					current = locations.get(i).getDistance (j);//sets cirrent
+					dest = current.getDestination().image.toLowerCase();//gets destination
+					if (dest.equals(locations.get(m).toString())) {//finds if destination is equal to a location
+						if (current.getNSDistance() > -1 && current.getEWDistance() > -1) {//sees if both distances are filled in
+							distance = current.getNSDistance() + current.getEWDistance();//sets distance
+							dist [i][m] = Integer.toString(distance);//places distance in correct array element
+						}
+					}
+					if ((dest.compareTo (locations.get(m).toString()) < 0) || m+1 == locations.size() ) {//checks if m needs to be reset & j iterated
+						m = 0;
+						j++;
+					}
+					else {//just need to iterate m
+						m++;
+					}
+				}
+			}
+		}
+		/*for (i = 0; i<locations.size(); i++) {
+			for (j = 0; j<locations.size(); j++) {//goes through every element
+				if (dist[i][j].compareTo("unknown") != 0) {//checks if distance is not unkown
+					if ((dist[j][i].compareTo("unknown") != 0) && (dist[i][j].compareTo(dist[j][i]) != 0)) {//if opposite is not unknown and not equal to its opposite, theres an error
+						throw new ParseException("[SEMANTIC ERROR] Distance between two objects cannot be specified more then once");
+					}
+					else if (dist[j][i].compareTo("unknown") == 0) {//means opposite distance is unknown 
+						dist[j][i] = dist[i][j];//sets to opposite
+					}
+				}
+			}
+		}*/
+		System.out.println ("Distances:");//prints out full distance matrix
+		line = "\t" + locations.get(0).toString();//gets header line of all locations
+		for (i = 1; i < locations.size(); i++) {//loops for all location name and adds to line
+			line = line + "\t" + locations.get(i).toString();
+		}
+		System.out.println (line);//prints line
+		
+		for (i = 0; i < locations.size(); i++) {//for each location prints out its distances
+			line = locations.get(i).toString() + "\t";
+			for (j = 0; j<locations.size(); j++) {//goes through the distances
+				line = line + dist[i][j] + "\t";//adds to line
+			}
+			System.out.println (line);//prints line before next line is reset
+		}
+		bonusTask (locations, dist);
+	}
+}
+void bonusTask (ArrayList <DirectedTokens> locations, String dist[][]): {
+	ArrayList <BonusToken> bLocs = new ArrayList<BonusToken> ();//holds the locations
+	int length;//holds length of new path distance
+	BonusToken start;//start node for any drill down
+	BonusToken current;//current node we're working on
+	Path minPath;//current minpath
+	Path updatePath;//the updated path node
+	String line;//holds line of text
+	int i;
+	int j;
+	int k;
+	int m;
+	int d;//holds distance when creating paths.
+}
+{
+	{
+		for (i=0;i<locations.size(); i++) {//creates needed bonustokens.
+			bLocs.add (new BonusToken (locations.get(i).getLoc()));
+		}
+		
+		for (i=0;i<locations.size(); i++) {//goes through every bonus token and creates the needed paths for it
+			for (j = 0; j<locations.size(); j++) {
+				if (dist[i][j].equals("unknown")) {//means any path we find will be better, so set the distance to max value
+					d = Integer.MAX_VALUE;
+				}
+				else {
+					d = Integer.parseInt (dist[i][j]);
+				}
+				bLocs.get(i).addPath (new Path (bLocs.get(j), d));
+			}
+		}
+		for (i = 0; i<bLocs.size(); i++){//loop goes through every location to try and find min paths
+			start = bLocs.get(i);//get next location
+			for (j = 0; j<start.getNumOfPaths(); j++) {//look through the paths
+				k = 0;
+				m = 0;//reset iterator values
+				Collections.sort (start.getPathList());//resort list in order of distance
+				minPath = start.getPath(j);//all paths before j are in min order and have already been checked. Must check next lowest path, which will be at j.
+				current = minPath.getDestination();//find the destination from this min path
+				while (k < current.getNumOfPaths()) {//look through all paths of destination
+					updatePath = current.getPath(k);//get the next path
+					if (updatePath.getDistance() == Integer.MAX_VALUE || minPath.getDistance() == Integer.MAX_VALUE){
+						length = Integer.MAX_VALUE;//adding to a MAX_VALUE causes an overflow, just set length to max.
+					}
+					else {	
+						length = updatePath.getDistance() + minPath.getDistance();//else just set length to distance to get to minpath plus the distance of the next path
+					}
+					if (updatePath.getDestination().getLoc().equals(start.getPath(m).getDestination().getLoc())) {//the path finds corresponding path in start location
+						if (length < start.getPath(m).getDistance()) {//means we've found a better path
+							start.getPath(m).setDistance(length);//update length
+						}
+						k++;//can move to next mind path
+						m = 0;//reset for path search
+					}
+					else {
+						m++;//look at next location
+					}
+				}
+			}
+		}
+		for (i = 0; i<bLocs.size(); i++){//sets new values in array
+			start = bLocs.get(i);//get next location
+			j = 0;
+			k = 0;//reset iterator values
+			while (j < start.getNumOfPaths()) {//go through each path
+				//since bLocs was created in alphabetical order, we have to find each destinations index in bLocs to find the index for the 2nd half of the array.
+				if (start.getPath(j).getDestination() == bLocs.get(k)) {//path between start and next location found
+					if (start.getPath(j).getDistance() == Integer.MAX_VALUE) {//checks for max value
+						dist[i][k] = "unknown";//we still don't know distance
+					}
+					else {//fills in min distance
+						dist[i][k] = Integer.toString (start.getPath(j).getDistance());
+					}
+					j++;//go to next path
+					k=0;//reset location search
+				}
+				else {
+					k++;//look at next location
+				}
+			}
+		}
+		
+		System.out.println ("Bonus Task: Shortest Distances:");//prints out full distance matrix
+		line = "\t" + bLocs.get(0).getLoc();//gets header line of all locations
+		for (i = 1; i < locations.size(); i++) {//loops for all location name and adds to line
+			line = line + "\t" + bLocs.get(i).getLoc();
+		}
+		System.out.println (line);//prints line
+		
+		for (i = 0; i < bLocs.size(); i++) {//for each location prints out its distances
+			line = bLocs.get(i).getLoc() + "\t";
+			for (j = 0; j<bLocs.size(); j++) {//goes through the distances
+				line = line + dist[i][j] + "\t";//adds to line
+			}
+			System.out.println (line);//prints line before next line is reset
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

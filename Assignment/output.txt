@@ -1,0 +1,19 @@
+Distances:
+	bush 	car 	donkey 	flower 	lady 	park 	rat 
+bush 	0	17	unknown	2	unknown	unknown	7	
+car 	17	0	unknown	2	unknown	15	unknown	
+donkey 	unknown	unknown	0	unknown	13	unknown	unknown	
+flower 	2	2	unknown	0	unknown	unknown	unknown	
+lady 	unknown	unknown	13	unknown	0	7	unknown	
+park 	unknown	15	unknown	unknown	7	0	unknown	
+rat 	7	unknown	unknown	unknown	unknown	unknown	0	
+Bonus Task: Shortest Distances:
+	bush 	car 	donkey 	flower 	lady 	park 	rat 
+bush 	0	4	39	2	26	19	7	
+car 	4	0	35	2	22	15	11	
+donkey 	39	35	0	37	13	20	46	
+flower 	2	2	37	0	24	17	9	
+lady 	26	22	13	24	0	7	33	
+park 	19	15	20	17	7	0	26	
+rat 	7	11	46	9	33	26	0	
+ExampleParser: The input was read sucessfully.

@@ -1,0 +1,16 @@
+i see the car, the park, the lady, the donkey, the bush, the flower, the rat.
+
+the car is 10m south of the park.
+the park is 5m west of the car.
+the park is 4m east of the lady.
+the park is 3m south of the lady.
+the donkey is 6m south of the lady.
+the donkey is 7m east of the lady.
+the flower is 1m east of the car.
+the car is 1m north of the flower.
+the bush is 15m south of the car.
+the bush is 2m west of the car.
+the flower is 1m east of the bush.
+the flower is 1m NORTH OF THE BUSH.
+the rat is 4m west of the bush.
+the bush is 3m north of the RAT.
